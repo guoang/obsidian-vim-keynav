@@ -13,8 +13,8 @@ Obsidian's built-in Vim mode (`Settings → Editor → Vim key bindings`) only w
 | `G` | Scroll to bottom |
 | `Ctrl+d` / `Ctrl+f` | Half-page down |
 | `Ctrl+u` / `Ctrl+b` | Half-page up |
-| `H` | Go back in history |
-| `L` | Go forward in history |
+| `H` / `L` | Switch to previous / next tab |
+| `Ctrl+o` / `Ctrl+i` | Go back / forward in history |
 | `/` | In-page search |
 | `f` / `s` | Activate link hints |
 
@@ -36,7 +36,7 @@ Input fields are detected automatically — vim keybindings are disabled while y
 
 ### Manual
 
-1. Download `main.js` and `manifest.json` from the [latest release](https://github.com/user/obsidian-vim-keynav/releases/latest).
+1. Download `main.js` and `manifest.json` from the [latest release](https://github.com/guoang/obsidian-vim-keynav/releases/latest).
 2. Create a folder `vim-keynav` inside your vault's `.obsidian/plugins/` directory.
 3. Copy `main.js` and `manifest.json` into that folder.
 4. Restart Obsidian, then enable **Vim KeyNav** in `Settings → Community Plugins`.

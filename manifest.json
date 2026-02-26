@@ -3,7 +3,7 @@
 	"name": "Vim KeyNav",
 	"version": "1.0.0",
 	"minAppVersion": "1.0.0",
-	"description": "Vim-style keyboard navigation for reading mode and built-in browser: scrolling (j/k/gg/G), half-page (Ctrl+d/f/u/b), history (H/L), search (/), link hints (f/s).",
+	"description": "Vim-style keyboard navigation for reading mode and built-in browser: scrolling (j/k/gg/G), half-page (Ctrl+d/f/u/b), tab switching (H/L), history (Ctrl+o/i), search (/), link hints (f/s).",
 	"author": "Guo Ang",
 	"authorUrl": "https://github.com/guoang",
 	"isDesktopOnly": true
