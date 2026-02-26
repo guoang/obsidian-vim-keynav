@@ -694,14 +694,25 @@ class VimReadingModePlugin extends obsidian.Plugin {
 		const mdView = this.app.workspace.getActiveViewOfType(obsidian.MarkdownView);
 		if (mdView) {
 			if (mdView.getMode() === "preview") {
-				const el = mdView.previewMode.containerEl.querySelector(".markdown-preview-view");
-				return el || mdView.previewMode.containerEl;
+				const ce = mdView.previewMode.containerEl;
+				let el = ce.querySelector(".markdown-preview-view");
+				if (el) {
+					// Walk up to find the actual scroll container
+					// (newer Obsidian moves overflow-y to a parent like .markdown-reading-view)
+					let cur = el;
+					while (cur && cur !== ce) {
+						const ov = getComputedStyle(cur).overflowY;
+						if (ov === "auto" || ov === "scroll") return cur;
+						cur = cur.parentElement;
+					}
+				}
+				return ce;
 			}
 			// Source/editing mode — don't interfere
 			return null;
 		}
 
-		// Other view types (PDF viewer, image viewer, etc.)
+		// Other view types (PDF viewer, database/base, image viewer, etc.)
 		const leaf = this.app.workspace.activeLeaf;
 		if (!leaf || !leaf.view) return null;
 
@@ -709,7 +720,31 @@ class VimReadingModePlugin extends obsidian.Plugin {
 		if (leaf.view.containerEl.querySelector("webview")) return null;
 
 		const content = leaf.view.containerEl.querySelector(".view-content");
-		return content || null;
+		if (!content) return null;
+
+		// .view-content itself may not be scrollable (e.g. .base database views).
+		// Walk the subtree to find the largest actually-scrollable element.
+		if (content.scrollHeight > content.clientHeight + 5) {
+			const ov = getComputedStyle(content).overflowY;
+			if (ov === "auto" || ov === "scroll" || ov === "overlay") return content;
+		}
+		let best = null;
+		let bestArea = 0;
+		const walker = document.createTreeWalker(content, NodeFilter.SHOW_ELEMENT);
+		while (walker.nextNode()) {
+			const el = walker.currentNode;
+			if (el.scrollHeight <= el.clientHeight + 5) continue;
+			const cs = getComputedStyle(el);
+			if (cs.overflowY === "auto" || cs.overflowY === "scroll" || cs.overflowY === "overlay") {
+				const rect = el.getBoundingClientRect();
+				const area = rect.width * rect.height;
+				if (area > bestArea) {
+					bestArea = area;
+					best = el;
+				}
+			}
+		}
+		return best || content;
 	}
 
 	_isInputFocused(evt) {
