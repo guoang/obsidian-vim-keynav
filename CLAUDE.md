@@ -52,3 +52,7 @@ The plugin is a single `main.js` with no build step or dependencies.
 2. **Host-level handler** (`before-input-event` on `<webview>` DOM element): Intercepts keys before they reach page JS in ANY frame (including cross-origin). Translates vim keys to native browser scroll keys via `sendInputEvent()`.
 
 Both layers coexist. The host-level handler takes priority for cross-origin iframe pages (e.g. Lark/Feishu docs).
+
+## Git Worktree
+
+本项目使用了 git worktree。当前目录可能是一个 worktree 而非主仓库，`git checkout master` 会失败。执行需要切换到 master 的操作（如 rebase 合并）前，先用 `git worktree list` 确认 master 所在的 worktree 路径，然后通过 `git -C <主仓库路径>` 在对应目录执行 merge 命令。
