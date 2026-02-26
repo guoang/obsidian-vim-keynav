@@ -470,6 +470,12 @@ function buildWebviewScript() {
 				case "G":
 					target.scrollTo({ top: target.scrollHeight, behavior: "smooth" });
 					evt.preventDefault(); evt.stopImmediatePropagation(); return;
+				case "H":
+					console.log("__VIM_SWITCH_TAB_PREV__");
+					evt.preventDefault(); evt.stopImmediatePropagation(); return;
+				case "L":
+					console.log("__VIM_SWITCH_TAB_NEXT__");
+					evt.preventDefault(); evt.stopImmediatePropagation(); return;
 				case "F": case "S":
 					activateHints(true);
 					if (hintsActive) { evt.preventDefault(); evt.stopImmediatePropagation(); }
@@ -637,10 +643,14 @@ class VimReadingModePlugin extends obsidian.Plugin {
 		webview.addEventListener("did-navigate", inject);
 		webview.addEventListener("did-navigate-in-page", inject);
 
-		// Handle find-in-page requests from injected script
+		// Handle messages from injected script
 		webview.addEventListener("console-message", (e) => {
 			if (e.message === "__VIM_FIND_IN_PAGE__") {
 				this._openWebviewSearch(webview);
+			} else if (e.message === "__VIM_SWITCH_TAB_PREV__") {
+				this._switchTab(-1);
+			} else if (e.message === "__VIM_SWITCH_TAB_NEXT__") {
+				this._switchTab(1);
 			}
 		});
 
