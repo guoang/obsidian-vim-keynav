@@ -56,13 +56,15 @@ class LinkHints {
 		this.wrapperEl.className = "vim-link-hints-wrapper";
 		this.container.appendChild(this.wrapperEl);
 
+		const wrapperRect = this.wrapperEl.getBoundingClientRect();
+
 		this.hints = visible.map((el, i) => {
 			const overlay = document.createElement("span");
 			overlay.className = "vim-link-hint";
 			overlay.textContent = labels[i];
 			const elRect = el.getBoundingClientRect();
-			overlay.style.left = (elRect.left - containerRect.left + this.container.scrollLeft) + "px";
-			overlay.style.top = (elRect.top - containerRect.top + this.container.scrollTop) + "px";
+			overlay.style.left = (elRect.left - wrapperRect.left) + "px";
+			overlay.style.top = (elRect.top - wrapperRect.top) + "px";
 			this.wrapperEl.appendChild(overlay);
 			return { el, label: labels[i], overlay };
 		});
