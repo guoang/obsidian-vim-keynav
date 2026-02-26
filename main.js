@@ -173,15 +173,15 @@ function buildWebviewScript() {
 	if (window.__vimReadingModeInjected) return;
 	window.__vimReadingModeInjected = true;
 
-	const SCROLL_STEP = 60;
-	const HINT_CHARS = "fjdkslaghrueiwocmvnt";
-	const SEQUENCE_TIMEOUT = 500;
+	var SCROLL_STEP = 60;
+	var HINT_CHARS = "fjdkslaghrueiwocmvnt";
+	var SEQUENCE_TIMEOUT = 500;
 
 	// ── Inject styles ──
 	function injectStyles(doc) {
 		if (doc.__vimStylesInjected) return;
 		doc.__vimStylesInjected = true;
-		const style = doc.createElement("style");
+		var style = doc.createElement("style");
 		style.textContent = \`
 .vim-link-hints-wrapper {
 	position: fixed; top: 0; left: 0; width: 0; height: 0;
@@ -203,31 +203,30 @@ function buildWebviewScript() {
 	}
 	injectStyles(document);
 
-	// ── Link Hints (webview version, uses fixed positioning) ──
-	let hintsActive = false;
-	let hintsOpenInNewTab = false;
-	let hints = [];
-	let typed = "";
-	let wrapperEl = null;
+	// ── Link Hints ──
+	var hintsActive = false;
+	var hintsOpenInNewTab = false;
+	var hints = [];
+	var typed = "";
+	var wrapperEl = null;
 
 	function collectVisibleLinks() {
-		// Collect from main document and all accessible iframes
-		const allLinks = [];
+		var allLinks = [];
 		function gather(doc) {
 			try {
-				const els = doc.querySelectorAll("a[href], button, [role=button], input[type=submit], [onclick]");
-				for (const el of els) allLinks.push({ el, doc });
+				var els = doc.querySelectorAll("a[href], button, [role=button], input[type=submit], [onclick]");
+				for (var i = 0; i < els.length; i++) allLinks.push({ el: els[i], doc: doc });
 			} catch(e) {}
 			try {
-				const frames = doc.querySelectorAll("iframe");
-				for (const f of frames) {
-					try { if (f.contentDocument) gather(f.contentDocument); } catch(e) {}
+				var frames = doc.querySelectorAll("iframe");
+				for (var i = 0; i < frames.length; i++) {
+					try { if (frames[i].contentDocument) gather(frames[i].contentDocument); } catch(e) {}
 				}
 			} catch(e) {}
 		}
 		gather(document);
-		return allLinks.filter(({ el }) => {
-			const r = el.getBoundingClientRect();
+		return allLinks.filter(function(item) {
+			var r = item.el.getBoundingClientRect();
 			return r.top < window.innerHeight && r.bottom > 0
 				&& r.left < window.innerWidth && r.right > 0
 				&& r.width > 0 && r.height > 0;
@@ -239,30 +238,26 @@ function buildWebviewScript() {
 		hintsActive = true;
 		hintsOpenInNewTab = !!openInNewTab;
 		typed = "";
-
-		const visible = collectVisibleLinks();
+		var visible = collectVisibleLinks();
 		if (visible.length === 0) { hintsActive = false; return; }
-
-		const labels = generateLabels(visible.length);
+		var labels = generateLabels(visible.length);
 		wrapperEl = document.createElement("div");
 		wrapperEl.className = "vim-link-hints-wrapper";
 		document.body.appendChild(wrapperEl);
-
-		hints = visible.map(({ el }, i) => {
-			const overlay = document.createElement("span");
+		hints = visible.map(function(item, i) {
+			var overlay = document.createElement("span");
 			overlay.className = "vim-link-hint";
 			overlay.textContent = labels[i];
-			const r = el.getBoundingClientRect();
+			var r = item.el.getBoundingClientRect();
 			overlay.style.left = r.left + "px";
 			overlay.style.top = r.top + "px";
 			wrapperEl.appendChild(overlay);
-			return { el, label: labels[i], overlay };
+			return { el: item.el, label: labels[i], overlay: overlay };
 		});
 	}
 
 	function deactivateHints() {
-		hintsActive = false;
-		typed = "";
+		hintsActive = false; typed = "";
 		if (wrapperEl) { wrapperEl.remove(); wrapperEl = null; }
 		hints = [];
 	}
@@ -275,7 +270,7 @@ function buildWebviewScript() {
 			return true;
 		}
 		typed += key.toLowerCase();
-		const exact = hints.find(h => h.label === typed);
+		var exact = hints.find(function(h) { return h.label === typed; });
 		if (exact) {
 			if (hintsOpenInNewTab) {
 				exact.el.dispatchEvent(new MouseEvent("click", {
@@ -286,18 +281,19 @@ function buildWebviewScript() {
 			}
 			deactivateHints(); return true;
 		}
-		const possible = hints.filter(h => h.label.startsWith(typed));
+		var possible = hints.filter(function(h) { return h.label.startsWith(typed); });
 		if (possible.length === 0) { deactivateHints(); return true; }
 		updateHintVisibility();
 		return true;
 	}
 
 	function updateHintVisibility() {
-		for (const h of hints) {
+		for (var i = 0; i < hints.length; i++) {
+			var h = hints[i];
 			if (h.label.startsWith(typed)) {
 				h.overlay.style.display = "";
-				const matched = h.label.slice(0, typed.length);
-				const rest = h.label.slice(typed.length);
+				var matched = h.label.slice(0, typed.length);
+				var rest = h.label.slice(typed.length);
 				h.overlay.innerHTML = '<span class="vim-hint-matched">' + matched + '</span>' + rest;
 			} else {
 				h.overlay.style.display = "none";
@@ -306,41 +302,48 @@ function buildWebviewScript() {
 	}
 
 	function generateLabels(count) {
-		const chars = HINT_CHARS;
-		if (count <= chars.length) return Array.from({ length: count }, (_, i) => chars[i]);
-		const labels = [];
-		for (let i = 0; i < chars.length && labels.length < count; i++)
-			for (let j = 0; j < chars.length && labels.length < count; j++)
+		var chars = HINT_CHARS;
+		if (count <= chars.length) return Array.from({ length: count }, function(_, i) { return chars[i]; });
+		var labels = [];
+		for (var i = 0; i < chars.length && labels.length < count; i++)
+			for (var j = 0; j < chars.length && labels.length < count; j++)
 				labels.push(chars[i] + chars[j]);
 		return labels;
 	}
 
-	// ── Key sequence state ──
-	let gPending = false;
-	let gTimer = null;
+	var gPending = false;
+	var gTimer = null;
 
-	// ── Determine if target is a real text input (not Lark's contentEditable viewer) ──
-	function isRealInput(t) {
-		if (t.tagName === "INPUT") {
-			const type = (t.type || "").toLowerCase();
-			// Only block text-like inputs, not buttons/checkboxes
-			return ["text","password","email","search","url","tel","number",""].includes(type);
+	// ── Focus detection ──
+	function getDeepActiveElement() {
+		var el = document.activeElement;
+		while (el && el.shadowRoot && el.shadowRoot.activeElement) {
+			el = el.shadowRoot.activeElement;
 		}
-		if (t.tagName === "TEXTAREA") return true;
-		// For contentEditable: only treat as input if it looks like an actual editor
-		// (has a small bounding box or is explicitly an editor role)
-		if (t.isContentEditable) {
-			// Skip if it's a large container (likely Lark's page-level contentEditable wrapper)
-			const r = t.getBoundingClientRect();
+		return el;
+	}
+
+	function isEditable(el) {
+		if (!el || el === document.body || el === document.documentElement) return false;
+		var tag = el.tagName;
+		if (tag === "INPUT") {
+			var type = (el.type || "").toLowerCase();
+			var nonText = ["button","checkbox","color","file","hidden","image","radio","reset","submit"];
+			return nonText.indexOf(type) === -1;
+		}
+		if (tag === "TEXTAREA") return true;
+		if (tag === "SELECT") return true;
+		if (el.isContentEditable) {
+			var r = el.getBoundingClientRect();
 			if (r.height > window.innerHeight * 0.5) return false;
 			return true;
 		}
 		return false;
 	}
 
-	// ── Main keydown handler — on window capture for highest priority ──
+	// ── Keydown handler ──
 	function handleKeydown(evt) {
-		// Link hints intercept
+		if (evt.isTrusted === false) return;
 		if (hintsActive) {
 			if (handleHintKey(evt.key)) {
 				evt.preventDefault();
@@ -348,13 +351,11 @@ function buildWebviewScript() {
 			}
 			return;
 		}
+		var active = getDeepActiveElement();
+		if (isEditable(active)) return;
 
-		if (isRealInput(evt.target)) return;
+		var halfPage = window.innerHeight * 0.5;
 
-		const scrollEl = document.scrollingElement || document.documentElement;
-		const halfPage = window.innerHeight * 0.5;
-
-		// Ctrl combos
 		if (evt.ctrlKey && !evt.shiftKey && !evt.altKey && !evt.metaKey) {
 			if (evt.key === "d" || evt.key === "f") {
 				window.scrollBy({ top: halfPage, behavior: "smooth" });
@@ -373,13 +374,12 @@ function buildWebviewScript() {
 				evt.preventDefault(); evt.stopImmediatePropagation(); return;
 			}
 		}
-
 		if (evt.ctrlKey || evt.altKey || evt.metaKey) return;
 
-		// Shift keys
 		if (evt.shiftKey) {
 			switch (evt.key) {
 				case "G":
+					var scrollEl = document.scrollingElement || document.documentElement;
 					window.scrollTo({ top: scrollEl.scrollHeight, behavior: "smooth" });
 					evt.preventDefault(); evt.stopImmediatePropagation(); return;
 				case "F": case "S":
@@ -390,7 +390,6 @@ function buildWebviewScript() {
 			return;
 		}
 
-		// Plain keys
 		switch (evt.key) {
 			case "j":
 				window.scrollBy({ top: SCROLL_STEP });
@@ -421,10 +420,9 @@ function buildWebviewScript() {
 		}
 	}
 
-	// Listen on window (capture) — runs before any document-level handlers
 	window.addEventListener("keydown", handleKeydown, true);
 
-	// ── Expose globals for host-level control (before-input-event) ──
+	// ── Expose globals for host-level control ──
 	window.__vimHintsActive = false;
 	window.__vimActivateHints = function(openInNewTab) {
 		activateHints(openInNewTab);
@@ -435,57 +433,32 @@ function buildWebviewScript() {
 		window.__vimHintsActive = false;
 	};
 	window.__vimHandleHintKey = function(key) {
-		const result = handleHintKey(key);
+		var result = handleHintKey(key);
 		window.__vimHintsActive = hintsActive;
 		return result;
 	};
 
-	// ── Report input focus state to host ──
-	document.addEventListener("focusin", function(e) {
-		const t = e.target;
-		if (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable) {
-			console.log("__VIM_INPUT_FOCUS__");
-		}
-	}, true);
-	document.addEventListener("focusout", function(e) {
-		console.log("__VIM_INPUT_BLUR__");
-	}, true);
-
 	// ── Inject into same-origin iframes ──
 	function injectIntoFrames() {
-		const frames = document.querySelectorAll("iframe");
-		for (const frame of frames) {
+		var frames = document.querySelectorAll("iframe");
+		for (var fi = 0; fi < frames.length; fi++) {
 			try {
-				const fdoc = frame.contentDocument;
+				var fdoc = frames[fi].contentDocument;
 				if (!fdoc || fdoc.__vimKeyHandlerInjected) continue;
 				fdoc.__vimKeyHandlerInjected = true;
 				injectStyles(fdoc);
-				// Forward key events from iframe to top window's handler
 				fdoc.defaultView.addEventListener("keydown", function(evt) {
 					handleKeydown(evt);
 				}, true);
-				// Also report focus from iframes
-				fdoc.addEventListener("focusin", function(e) {
-					const t = e.target;
-					if (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable) {
-						console.log("__VIM_INPUT_FOCUS__");
-					}
-				}, true);
-				fdoc.addEventListener("focusout", function() {
-					console.log("__VIM_INPUT_BLUR__");
-				}, true);
-			} catch(e) { /* cross-origin, skip */ }
+			} catch(e) {}
 		}
 	}
 
-	// Run once now, then watch for new iframes
 	injectIntoFrames();
-	const mo = new MutationObserver(function() { injectIntoFrames(); });
+	var mo = new MutationObserver(function() { injectIntoFrames(); });
 	mo.observe(document.body || document.documentElement, { childList: true, subtree: true });
-
-	// Also retry periodically for lazy-loaded iframes (e.g. Lark)
-	let retries = 0;
-	const retryInterval = setInterval(function() {
+	var retries = 0;
+	var retryInterval = setInterval(function() {
 		injectIntoFrames();
 		if (++retries >= 20) clearInterval(retryInterval);
 	}, 1000);
@@ -507,26 +480,22 @@ class VimReadingModePlugin extends obsidian.Plugin {
 	}
 
 	async onload() {
-		// Inject hint styles
 		this._styleEl = document.createElement("style");
 		this._styleEl.textContent = HINT_STYLES;
 		document.head.appendChild(this._styleEl);
 
-		// Reading mode keybindings
 		this.registerDomEvent(document, "keydown", this._onKeydown);
-
-		// Webview injection
 		this._setupWebviewObserver();
 
-		// Auto-focus webview when switching to a tab that contains one
+		// When switching to a webview tab, keep it unfocused (normal mode)
+		// so document keydown can capture vim keys.
 		this.registerEvent(
 			this.app.workspace.on("active-leaf-change", (leaf) => {
 				if (!leaf) return;
-				// Small delay to let the DOM settle after tab switch
 				setTimeout(() => {
 					const wv = leaf.view.containerEl.querySelector("webview");
-					if (wv) {
-						try { wv.focus(); } catch (e) { /* ignore */ }
+					if (wv && document.activeElement === wv) {
+						wv.blur();
 					}
 				}, 50);
 			})
@@ -543,17 +512,13 @@ class VimReadingModePlugin extends obsidian.Plugin {
 	// ── Webview observer ──
 
 	_setupWebviewObserver() {
-		// Inject into any existing webviews
 		document.querySelectorAll("webview").forEach(wv => this._attachWebview(wv));
-
-		// Watch for new webviews
 		this._observer = new MutationObserver(mutations => {
 			for (const m of mutations) {
 				for (const node of m.addedNodes) {
 					if (node.nodeName === "WEBVIEW") {
 						this._attachWebview(node);
 					}
-					// Also check children (webview might be nested)
 					if (node.querySelectorAll) {
 						node.querySelectorAll("webview").forEach(wv => this._attachWebview(wv));
 					}
@@ -570,253 +535,75 @@ class VimReadingModePlugin extends obsidian.Plugin {
 		const script = buildWebviewScript();
 
 		const inject = () => {
-			try { webview.executeJavaScript(script); } catch (e) { /* ignore */ }
+			try { webview.executeJavaScript(script); } catch (e) {}
 		};
 
-		const injectAndFocus = () => {
+		const injectAndBlur = () => {
 			inject();
-			try { webview.focus(); } catch (e) { /* ignore */ }
+			// Keep webview unfocused so document keydown captures vim keys.
+			// Lark and similar SPAs use cross-origin iframes that swallow
+			// keyboard events — by keeping focus on the host document,
+			// we can intercept keys and forward them via executeJavaScript.
+			setTimeout(() => {
+				if (document.activeElement === webview) {
+					webview.blur();
+				}
+			}, 100);
 		};
 
-		// Inject when ready and on each navigation
-		webview.addEventListener("dom-ready", injectAndFocus);
-		webview.addEventListener("did-navigate", inject);
+		webview.addEventListener("dom-ready", injectAndBlur);
+		webview.addEventListener("did-navigate", injectAndBlur);
 		webview.addEventListener("did-navigate-in-page", inject);
+		webview.addEventListener("did-finish-load", () => {
+			inject();
+			// Blur again after full load — SPAs may re-grab focus
+			setTimeout(() => {
+				if (document.activeElement === webview) {
+					webview.blur();
+				}
+			}, 300);
+		});
 
-		// Handle find-in-page requests from injected script
+		// Prevent webview from auto-grabbing focus (e.g. from Lark's JS).
+		// Stop preventing after user explicitly clicks on the webview.
+		const preventAutoFocus = () => {
+			if (document.activeElement === webview) {
+				webview.blur();
+			}
+		};
+		webview.addEventListener("focus", preventAutoFocus);
+
+		// User click = enter "insert mode" — allow webview to have focus
+		webview.addEventListener("mousedown", () => {
+			webview.removeEventListener("focus", preventAutoFocus);
+		}, { once: true });
+
+		// Handle console messages from injected script
 		webview.addEventListener("console-message", (e) => {
 			if (e.message === "__VIM_FIND_IN_PAGE__") {
 				this._openWebviewSearch(webview);
 			}
+			if (e.message === "__VIM_EXIT_INSERT__") {
+				// User pressed Escape in the webview — blur to return to normal mode
+				webview.blur();
+				// Re-install focus prevention
+				webview.addEventListener("focus", preventAutoFocus);
+				// Remove it again on next mousedown
+				webview.addEventListener("mousedown", () => {
+					webview.removeEventListener("focus", preventAutoFocus);
+				}, { once: true });
+			}
 		});
 
-		// If already loaded, inject now
 		if (webview.getURL && webview.getURL()) {
 			inject();
 		}
-
-		// ── Host-level key handler via before-input-event ──
-		// This fires BEFORE page JS in ALL frames (including cross-origin iframes).
-		// Solves Lark docs and other complex SPAs.
-		this._setupHostKeyHandler(webview);
-	}
-
-	_setupHostKeyHandler(webview) {
-		let gPending = false;
-		let gTimer = null;
-		let hintsActive = false;
-		let inputFocused = false;
-
-		// Track input focus state from injected script
-		webview.addEventListener("console-message", (e) => {
-			if (e.message === "__VIM_INPUT_FOCUS__") inputFocused = true;
-			if (e.message === "__VIM_INPUT_BLUR__") inputFocused = false;
-		});
-
-		const execJS = (expr) => {
-			try { webview.executeJavaScript(expr); } catch (e) {}
-		};
-
-		// Resend a native keyboard event to the webview.
-		// Native keyboard events (Down/Up/PageDown/PageUp/Home/End) trigger
-		// browser-level scrolling that works even in cross-origin iframes
-		// (e.g. Lark docs), unlike JS scrollBy or mouseWheel sendInputEvent.
-		const resendKey = (keyCode, modifiers) => {
-			try {
-				const ev = { type: "keyDown", keyCode: keyCode };
-				if (modifiers) ev.modifiers = modifiers;
-				webview.sendInputEvent(ev);
-				webview.sendInputEvent(Object.assign({}, ev, { type: "keyUp" }));
-			} catch (e) {
-				// sendInputEvent not available — fall back to JS scrolling
-				// (only works for non-iframe pages)
-				const jsMap = {
-					"Down": "window.scrollBy({top:60})",
-					"Up": "window.scrollBy({top:-60})",
-					"Pagedown": "window.scrollBy({top:window.innerHeight*0.5,behavior:'smooth'})",
-					"Pageup": "window.scrollBy({top:-window.innerHeight*0.5,behavior:'smooth'})",
-					"Home": "window.scrollTo({top:0,behavior:'smooth'})",
-					"End": "window.scrollTo({top:document.scrollingElement.scrollHeight,behavior:'smooth'})"
-				};
-				if (jsMap[keyCode]) execJS(jsMap[keyCode]);
-			}
-		};
-
-		const handleBeforeInput = (event) => {
-			// Electron's <webview> spreads input properties directly onto the DOM Event
-			// via Object.assign(event, input). event.type stays "before-input-event"
-			// (readonly), so we must NOT check for "keyDown".
-			const key = event.key;
-			if (!key) return;
-
-			const ctrl = !!(event.control);
-			const shift = !!(event.shift);
-			const alt = !!(event.alt);
-			const meta = !!(event.meta);
-
-			// If link hints are active, route keys to injected script and block page
-			if (hintsActive) {
-				if (key === "Escape") {
-					execJS("if(window.__vimDeactivateHints) window.__vimDeactivateHints()");
-					hintsActive = false;
-				} else if (key === "Backspace") {
-					execJS("if(window.__vimHandleHintKey) window.__vimHandleHintKey('Backspace')");
-				} else if (key.length === 1) {
-					execJS(
-						"if(window.__vimHandleHintKey&&window.__vimHandleHintKey('" +
-						key.replace(/'/g, "\\'") + "')) {}" +
-						"; void(0)"
-					);
-					webview.executeJavaScript("!!window.__vimHintsActive")
-						.then(v => { hintsActive = v; }).catch(() => {});
-				}
-				event.preventDefault();
-				return;
-			}
-
-			// Skip single-letter keys if user is in a text input
-			if (inputFocused && !ctrl && !meta) return;
-
-			// Ctrl combos (Ctrl+d/f → PageDown, Ctrl+u/b → PageUp)
-			if (ctrl && !shift && !alt && !meta) {
-				if (key === "d" || key === "f") {
-					event.preventDefault();
-					resendKey("Pagedown");
-					return;
-				}
-				if (key === "u" || key === "b") {
-					event.preventDefault();
-					resendKey("Pageup");
-					return;
-				}
-				if (key === "o") {
-					try { webview.goBack(); } catch (e) {
-						execJS("history.back()");
-					}
-					event.preventDefault(); return;
-				}
-				if (key === "i") {
-					try { webview.goForward(); } catch (e) {
-						execJS("history.forward()");
-					}
-					event.preventDefault(); return;
-				}
-			}
-
-			if (ctrl || alt || meta) return;
-
-			// Shift combos (H/L/G)
-			if (shift) {
-				if (key === "H") {
-					this._switchTab(-1);
-					event.preventDefault(); return;
-				}
-				if (key === "L") {
-					this._switchTab(1);
-					event.preventDefault(); return;
-				}
-				if (key === "F" || key === "S") {
-					execJS("if(window.__vimActivateHints) window.__vimActivateHints(true)");
-					webview.executeJavaScript("!!window.__vimHintsActive")
-						.then(v => { hintsActive = v; }).catch(() => {});
-					event.preventDefault(); return;
-				}
-				if (key === "G") {
-					event.preventDefault();
-					resendKey("End", ["control"]);
-					return;
-				}
-				return;
-			}
-
-			// Plain keys — resend native scroll keys so browser handles
-			// scrolling at the native level (works in cross-origin iframes)
-			switch (key) {
-				case "j":
-					event.preventDefault();
-					resendKey("Down");
-					break;
-				case "k":
-					event.preventDefault();
-					resendKey("Up");
-					break;
-				case "/":
-					this._openWebviewSearch(webview);
-					event.preventDefault(); break;
-				case "f":
-				case "s":
-					execJS("if(window.__vimActivateHints) window.__vimActivateHints()");
-					webview.executeJavaScript("!!window.__vimHintsActive")
-						.then(v => { hintsActive = v; }).catch(() => {});
-					event.preventDefault(); break;
-				case "g":
-					if (gPending) {
-						clearTimeout(gTimer); gPending = false;
-						event.preventDefault();
-						resendKey("Home", ["control"]);
-					} else {
-						gPending = true;
-						gTimer = setTimeout(() => { gPending = false; }, 500);
-					}
-					break;
-				default:
-					if (gPending) { clearTimeout(gTimer); gPending = false; }
-					break;
-			}
-		};
-
-		// Primary: Electron webview DOM before-input-event
-		webview.addEventListener("before-input-event", handleBeforeInput);
-
-		// Fallback: try to get webContents for native Electron before-input-event
-		// (more reliable, works even if DOM event doesn't propagate)
-		const tryWebContents = () => {
-			try {
-				let wc = null;
-				if (typeof webview.getWebContents === "function") {
-					wc = webview.getWebContents();
-				}
-				if (!wc) {
-					try {
-						const remote = require("@electron/remote") || require("electron").remote;
-						if (remote && typeof webview.getWebContentsId === "function") {
-							wc = remote.webContents.fromId(webview.getWebContentsId());
-						}
-					} catch (e) {}
-				}
-				if (wc) {
-					wc.on("before-input-event", (electronEvent, input) => {
-						if (input.type !== "keyDown") return;
-						const fakeEvent = {
-							key: input.key,
-							control: input.control,
-							shift: input.shift,
-							alt: input.alt,
-							meta: input.meta,
-							defaultPrevented: false,
-							preventDefault() {
-								this.defaultPrevented = true;
-								electronEvent.preventDefault();
-							}
-						};
-						handleBeforeInput.call(this, fakeEvent);
-					});
-				}
-			} catch (e) { /* electron APIs not available */ }
-		};
-
-		// Try immediately and also after dom-ready
-		tryWebContents();
-		webview.addEventListener("dom-ready", () => tryWebContents(), { once: true });
 	}
 
 	_openWebviewSearch(webview) {
-		// Trigger Obsidian's built-in search for the active view,
-		// or fall back to webview.findInPage with a prompt
 		try {
 			this.app.commands.executeCommandById("editor:open-search");
 		} catch (e) {
-			// Fallback: minimal prompt-based search
 			const term = prompt("Search in page:");
 			if (term) {
 				webview.findInPage(term);
@@ -845,15 +632,12 @@ class VimReadingModePlugin extends obsidian.Plugin {
 				const el = mdView.previewMode.containerEl.querySelector(".markdown-preview-view");
 				return el || mdView.previewMode.containerEl;
 			}
-			// Source/editing mode — don't interfere
 			return null;
 		}
 
-		// Other view types (PDF viewer, image viewer, etc.)
 		const leaf = this.app.workspace.activeLeaf;
 		if (!leaf || !leaf.view) return null;
 
-		// Webview tabs are handled by _setupHostKeyHandler
 		if (leaf.view.containerEl.querySelector("webview")) return null;
 
 		const content = leaf.view.containerEl.querySelector(".view-content");
@@ -863,6 +647,93 @@ class VimReadingModePlugin extends obsidian.Plugin {
 	_isInputFocused(evt) {
 		const t = evt.target;
 		return t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable;
+	}
+
+	// ── Direct webview key handler ──
+	// Uses executeJavaScript to forward vim keys to the webview.
+	// Works regardless of webview focus state.
+
+	_handleWebviewKeyDirect(webview, evt) {
+		const key = evt.key;
+		const ctrl = evt.ctrlKey;
+		const shift = evt.shiftKey;
+		const alt = evt.altKey;
+		const meta = evt.metaKey;
+
+		const execJS = (expr) => {
+			try { webview.executeJavaScript(expr); } catch (e) {}
+		};
+
+		if (ctrl && !shift && !alt && !meta) {
+			if (key === "d" || key === "f") {
+				execJS("window.scrollBy({top:window.innerHeight*0.5,behavior:'smooth'})");
+				evt.preventDefault(); return;
+			}
+			if (key === "u" || key === "b") {
+				execJS("window.scrollBy({top:-window.innerHeight*0.5,behavior:'smooth'})");
+				evt.preventDefault(); return;
+			}
+			if (key === "o") {
+				try { webview.goBack(); } catch (e) {
+					execJS("history.back()");
+				}
+				evt.preventDefault(); return;
+			}
+			if (key === "i") {
+				try { webview.goForward(); } catch (e) {
+					execJS("history.forward()");
+				}
+				evt.preventDefault(); return;
+			}
+		}
+
+		if (ctrl || alt || meta) return;
+
+		if (shift) {
+			if (key === "H") { this._switchTab(-1); evt.preventDefault(); return; }
+			if (key === "L") { this._switchTab(1); evt.preventDefault(); return; }
+			if (key === "G") {
+				execJS("window.scrollTo({top:(document.scrollingElement||document.documentElement).scrollHeight,behavior:'smooth'})");
+				evt.preventDefault(); return;
+			}
+			if (key === "F" || key === "S") {
+				execJS("if(window.__vimActivateHints) window.__vimActivateHints(true)");
+				evt.preventDefault(); return;
+			}
+			return;
+		}
+
+		switch (key) {
+			case "j":
+				execJS("window.scrollBy({top:60})");
+				evt.preventDefault(); break;
+			case "k":
+				execJS("window.scrollBy({top:-60})");
+				evt.preventDefault(); break;
+			case "/":
+				this._openWebviewSearch(webview);
+				evt.preventDefault(); break;
+			case "f": case "s":
+				execJS("if(window.__vimActivateHints) window.__vimActivateHints()");
+				evt.preventDefault(); break;
+			case "g":
+				if (this._gPending) {
+					clearTimeout(this._gTimer);
+					this._gPending = false;
+					execJS("window.scrollTo({top:0,behavior:'smooth'})");
+					evt.preventDefault();
+				} else {
+					this._gPending = true;
+					this._gTimer = setTimeout(() => { this._gPending = false; }, SEQUENCE_TIMEOUT);
+				}
+				break;
+			default:
+				if (this._gPending) {
+					clearTimeout(this._gTimer);
+					this._gPending = false;
+				}
+				break;
+		}
 	}
 
 	// ── Keydown handler (all view types) ──
@@ -878,6 +749,16 @@ class VimReadingModePlugin extends obsidian.Plugin {
 		}
 
 		if (this._isInputFocused(evt)) return;
+
+		// If active view has a webview, handle keys via executeJavaScript
+		const leaf = this.app.workspace.activeLeaf;
+		if (leaf && leaf.view) {
+			const wv = leaf.view.containerEl.querySelector("webview");
+			if (wv) {
+				this._handleWebviewKeyDirect(wv, evt);
+				return;
+			}
+		}
 
 		// ── Global navigation (works in any view type) ──
 
@@ -910,7 +791,6 @@ class VimReadingModePlugin extends obsidian.Plugin {
 
 		const halfPage = container.clientHeight * 0.5;
 
-		// Ctrl combos
 		if (evt.ctrlKey && !evt.shiftKey && !evt.altKey && !evt.metaKey) {
 			if (evt.key === "d" || evt.key === "f") {
 				container.scrollBy({ top: halfPage, behavior: "smooth" });
@@ -924,7 +804,6 @@ class VimReadingModePlugin extends obsidian.Plugin {
 
 		if (evt.ctrlKey || evt.altKey || evt.metaKey) return;
 
-		// Shift keys
 		if (evt.shiftKey) {
 			if (evt.key === "G") {
 				container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
@@ -942,7 +821,6 @@ class VimReadingModePlugin extends obsidian.Plugin {
 			return;
 		}
 
-		// Plain keys
 		switch (evt.key) {
 			case "j":
 				container.scrollBy({ top: SCROLL_STEP });
