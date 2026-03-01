@@ -19,14 +19,14 @@ $WIKI/.obsidian/plugins/vim-keynav/   # Runtime install in vault
 └── manifest.json
 ```
 
-`$WIKI` resolves to `~/OneDrive/wiki/`.
+`$WIKI` resolves to `~/wiki/`.
 
 ## Development Workflow
 
 1. Edit code in `~/claude/obsidian-vim-keynav/`.
 2. Deploy to vault for testing:
    ```bash
-   cp ~/claude/obsidian-vim-keynav/{main.js,manifest.json} ~/OneDrive/wiki/.obsidian/plugins/vim-keynav/
+   cp ~/claude/obsidian-vim-keynav/{main.js,manifest.json} ~/wiki/.obsidian/plugins/vim-keynav/
    ```
 3. In Obsidian: disable then re-enable **Vim KeyNav** in `Settings → Community Plugins` (or restart Obsidian) to reload.
 4. Test in both reading mode and webview tabs.

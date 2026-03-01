@@ -5,7 +5,11 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:api.github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:docs.obsidian.md)",
+      "WebFetch(domain:deepwiki.com)",
+      "Bash(gh auth status:*)",
+      "Bash(gh pr checks:*)"
     ]
   }
 }
